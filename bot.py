@@ -191,12 +191,18 @@ async def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ask", ask))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
-    from telegram import Message
+    from telegram.ext import MessageFilter
 
-    def is_reply_to_bot(message: Message) -> bool:
-        return message.reply_to_message is not None and message.reply_to_message.from_user.is_bot
+    class ReplyToBotFilter(MessageFilter):
+        def filter(self, message):
+            return (
+                message.reply_to_message is not None and
+                message.reply_to_message.from_user and
+                message.reply_to_message.from_user.is_bot
+            )
 
-    app.add_handler(MessageHandler(filters.TEXT & filters.Create(is_reply_to_bot), handle_reply))
+    reply_to_bot_filter = ReplyToBotFilter()
+    app.add_handler(MessageHandler(filters.TEXT & reply_to_bot_filter, handle_reply))
 
 # 🔄 Correct async scheduler for your ask_group()
     scheduler = AsyncIOScheduler()

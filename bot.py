@@ -106,6 +106,33 @@ async def generate_question():
         print("❌ GPT Error:", e)
         return "وقتی استرس داری، معمولاً چه کاری بهت کمک می‌کنه؟"
 
+
+
+async def generate_funny_reply(user_text: str) -> str:
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a hilarious and sarcastic Telegram bot. "
+                        "Whenever someone replies to your question, you react with a short and funny comment in Persian (Farsi). "
+                        "Be playful, maybe a little dramatic, but never rude or inappropriate. "
+                        "Act like a witty friend responding in group chat."
+                    )
+                },
+                {
+                    "role": "user",
+                    "content": f"پاسخ کاربر: {user_text}\n\nجواب کوتاه، بامزه و فارسی بده:"
+                }
+            ],
+            temperature=0.9
+        )
+        return response.choices[0].message.content.strip()
+    except Exception as e:
+        print("❌ GPT funny reply error:", e)
+        return "😂 جوابت خیلی خاص بود، مرسی!"
 # ------------------- /ask Command -------------------
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
@@ -126,7 +153,7 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ------------------- Scheduled Ask -------------------
 async def ask_group(app):
     try:
-        chat_id = -1001234567890  # Replace this with your real group chat ID
+        chat_id = -1003675950022  # Replace this with your real group chat ID
         question = await generate_question()
 
         usernames = list(active_usernames)
@@ -138,6 +165,17 @@ async def ask_group(app):
     except Exception as e:
         print("❌ Scheduler ask_group error:", e)
 
+
+async def handle_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    msg = update.message
+
+    # Check if reply is to a message sent by the bot
+    if msg.reply_to_message and msg.reply_to_message.from_user.id == context.bot.id:
+        user_text = msg.text
+
+        funny_response = await generate_funny_reply(user_text)
+        await msg.reply_text(funny_response)
+
 # ------------------- Start the Bot -------------------
 async def main():
     load_usernames()
@@ -148,12 +186,9 @@ async def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ask", ask))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
-
+    app.add_handler(MessageHandler(filters.REPLY & filters.TEXT, handle_reply))
 
     from datetime import datetime, timedelta
-
-    # Scheduler (AFTER app is defined!)
-    scheduler = AsyncIOScheduler()
 
     # 🔧 Schedule test: run 1 minute from now
     run_time = datetime.now() + timedelta(minutes=1)

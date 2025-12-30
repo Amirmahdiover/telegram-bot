@@ -56,6 +56,7 @@ async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
             
 # ------------------- Start Command -------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print(f"Chat ID: {update.effective_chat.id}")
     await update.message.reply_text("سلام! من ربات گروه مدیریت استرسم 😊")
 
 # ------------------- GPT Question Generator -------------------
@@ -119,7 +120,7 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except Exception:
         mentions = []
 
-    message = f"🧠 سوال امروز:\n{question}\n\n📣 {' '.join(mentions)}"
+    message = f"{question}\n\n📣 {' '.join(mentions)}"
     await update.message.reply_text(message, parse_mode=ParseMode.HTML)
 
 # ------------------- Scheduled Ask -------------------
@@ -148,14 +149,27 @@ async def main():
     app.add_handler(CommandHandler("ask", ask))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
 
+
+    from datetime import datetime, timedelta
+
+    # Scheduler (AFTER app is defined!)
+    scheduler = AsyncIOScheduler()
+
+    # 🔧 Schedule test: run 1 minute from now
+    run_time = datetime.now() + timedelta(minutes=1)
     # Scheduler (AFTER app is defined!)
     scheduler = AsyncIOScheduler()
     scheduler.add_job(
-        lambda: ask_group(app),
-        trigger='cron',
-        hour=9,
-        minute=0
-    )
+    lambda: asyncio.create_task(ask_group(app)),
+    trigger='date',
+    run_date=run_time
+)
+    # scheduler.add_job(
+    #     lambda: asyncio.create_task(ask_group(app)),
+    #     trigger='cron',
+    #     hour='9,21',
+    #     minute=0
+    # )
     scheduler.start()
 
     print("✅ Bot is running...")

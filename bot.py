@@ -153,7 +153,8 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ------------------- Scheduled Ask -------------------
 async def ask_group(app):
     try:
-        chat_id = -1003675950022  # Replace this with your real group chat ID
+        # chat_id = -1003675950022  # Replace this with your real group chat ID
+        chat_id = -5213939968
         question = await generate_question()
 
         usernames = list(active_usernames)
@@ -198,11 +199,13 @@ async def main():
     run_time = datetime.now() + timedelta(minutes=1)
     # Scheduler (AFTER app is defined!)
     scheduler = AsyncIOScheduler()
+# 🔄 Correct async scheduler for your ask_group()
     scheduler.add_job(
-    lambda: asyncio.create_task(ask_group(app)),
-    trigger='date',
-    run_date=run_time
-)
+        ask_group,
+        trigger='date',
+        run_date=run_time,
+        args=[app]  # pass the app like this
+    )
     # scheduler.add_job(
     #     lambda: asyncio.create_task(ask_group(app)),
     #     trigger='cron',

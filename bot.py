@@ -153,14 +153,14 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ------------------- Scheduled Ask -------------------
 async def ask_group(app):
     try:
-        # chat_id = -1003675950022  # Replace this with your real group chat ID
-        chat_id = -1003501761776
+        chat_id = -1003675950022  # Replace this with your real group chat ID
+        # chat_id = -1003501761776
         question = await generate_question()
 
         usernames = list(active_usernames)
         mentions = [f"@{u}" for u in random.sample(usernames, min(3, len(usernames)))]
 
-        message = f"🧠 سوال امروز:\n{question}\n\n📣 {' '.join(mentions)}"
+        message = f"{question}\n\n📣 {' '.join(mentions)}"
         await app.bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.HTML)
 
     except Exception as e:
@@ -191,27 +191,22 @@ async def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ask", ask))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
-    app.add_handler(MessageHandler(filters.REPLY & filters.TEXT, handle_reply))
+    from telegram import Message
 
-    from datetime import datetime, timedelta
+    def is_reply_to_bot(message: Message) -> bool:
+        return message.reply_to_message is not None and message.reply_to_message.from_user.is_bot
 
-    # 🔧 Schedule test: run 1 minute from now
-    run_time = datetime.now() + timedelta(minutes=1)
-    # Scheduler (AFTER app is defined!)
-    scheduler = AsyncIOScheduler()
+    app.add_handler(MessageHandler(filters.TEXT & filters.Create(is_reply_to_bot), handle_reply))
+
 # 🔄 Correct async scheduler for your ask_group()
+    scheduler = AsyncIOScheduler()
     scheduler.add_job(
         ask_group,
-        trigger='date',
-        run_date=run_time,
-        args=[app]  # pass the app like this
+        trigger='cron',
+        hour='9,21',
+        minute=0,
+        args=[app]
     )
-    # scheduler.add_job(
-    #     lambda: asyncio.create_task(ask_group(app)),
-    #     trigger='cron',
-    #     hour='9,21',
-    #     minute=0
-    # )
     scheduler.start()
 
     print("✅ Bot is running...")

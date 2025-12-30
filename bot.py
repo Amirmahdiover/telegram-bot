@@ -21,11 +21,8 @@ client = OpenAI(api_key=openai.api_key)
 # ------------------- Track Active Users -------------------
 active_usernames = set()
 
-
-# File to store usernames
 USER_FILE = "users.json"
 
-# Load usernames on startup
 def load_usernames():
     global active_usernames
     try:
@@ -37,7 +34,6 @@ def load_usernames():
     except Exception as e:
         print("❌ Failed to load usernames:", e)
 
-# Save usernames to file
 def save_usernames():
     try:
         with open(USER_FILE, "w", encoding="utf-8") as f:
@@ -46,20 +42,17 @@ def save_usernames():
     except Exception as e:
         print("❌ Failed to save usernames:", e)
 
-
 async def track_users(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     if user and user.username:
         if user.username not in active_usernames:
             active_usernames.add(user.username)
-            save_usernames()  # Save immediately when a new one is added
-            
-# ------------------- Start Command -------------------
+            save_usernames()
+
+# ------------------- Commands -------------------
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(f"Chat ID: {update.effective_chat.id}")
     await update.message.reply_text("سلام! من ربات گروه مدیریت استرسم 😊")
-
-# ------------------- GPT Question Generator -------------------
 
 themes = [
     "Ask a poetic and dreamy question about how emotions feel.",
@@ -84,20 +77,12 @@ themes = [
     "Ask a self-care question disguised as a game or playful challenge."
 ]
 
-
 async def generate_question():
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {
-                    "role": "system",
-                    "content":  (
-            "You are a supportive Telegram bot for stress relief...\n"
-            + random.choice(themes) + "\n"
-            "Write the question in Persian (Farsi), casual and safe."
-            )
-                }
+                {"role": "system", "content": "You are a supportive Telegram bot...\n" + random.choice(themes) + "\nسوال را امن و خودمانی به فارسی بنویس."}
             ],
             temperature=0.8,
         )
@@ -106,34 +91,20 @@ async def generate_question():
         print("❌ GPT Error:", e)
         return "وقتی استرس داری، معمولاً چه کاری بهت کمک می‌کنه؟"
 
-
-
 async def generate_funny_reply(user_text: str) -> str:
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "You are a hilarious and sarcastic Telegram bot. "
-                        "Whenever someone replies to your question, you react with a short and funny comment in Persian (Farsi). "
-                        "Be playful, maybe a little dramatic, but never rude or inappropriate. "
-                        "Act like a witty friend responding in group chat."
-                    )
-                },
-                {
-                    "role": "user",
-                    "content": f"پاسخ کاربر: {user_text}\n\nجواب کوتاه، بامزه و فارسی بده:"
-                }
+                {"role": "system", "content": "تو یه دوست بامزه‌ای که توی گروه جواب میده."},
+                {"role": "user", "content": f"پاسخ کاربر: {user_text}\nجواب کوتاه و خنده‌دار بده:"}
             ],
             temperature=0.9
         )
         return response.choices[0].message.content.strip()
-    except Exception as e:
-        print("❌ GPT funny reply error:", e)
-        return "😂 جوابت خیلی خاص بود، مرسی!"
-# ------------------- /ask Command -------------------
+    except:
+        return "😂 مرسی از جواب!"
+
 async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
     chat = update.effective_chat
     if chat.type not in [Chat.GROUP, Chat.SUPERGROUP]:
@@ -141,82 +112,53 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     question = await generate_question()
-    try:
-        usernames = list(active_usernames)
-        mentions = [f"@{u}" for u in random.sample(usernames, min(3, len(usernames)))]
-    except Exception:
-        mentions = []
-
+    usernames = list(active_usernames)
+    mentions = [f"@{u}" for u in random.sample(usernames, min(3, len(usernames)))]
     message = f"{question}\n\n📣 {' '.join(mentions)}"
     await update.message.reply_text(message, parse_mode=ParseMode.HTML)
 
-# ------------------- Scheduled Ask -------------------
-async def ask_group(app):
-    try:
-        chat_id = -1003675950022  # Replace this with your real group chat ID
-        # chat_id = -1003501761776
-        question = await generate_question()
+# ------------------- Reply Filter & Handler -------------------
 
-        usernames = list(active_usernames)
-        mentions = [f"@{u}" for u in random.sample(usernames, min(3, len(usernames)))]
+class ReplyToBotFilter(filters.BaseFilter):
+    def __call__(self, message: Chat) -> bool:
+        return (
+            message.reply_to_message is not None and
+            message.reply_to_message.from_user is not None and
+            message.reply_to_message.from_user.is_bot
+        )
 
-        message = f"{question}\n\n📣 {' '.join(mentions)}"
-        await app.bot.send_message(chat_id=chat_id, text=message, parse_mode=ParseMode.HTML)
-
-    except Exception as e:
-        print("❌ Scheduler ask_group error:", e)
-
+reply_to_bot_filter = ReplyToBotFilter()
 
 async def handle_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print("💬 Got a message...")
-
+    print("🔥 Reply handler triggered!")
     msg = update.message
-    if msg.reply_to_message:
-        print("↩️ It is a reply!")
+    user_text = msg.text
+    funny = await generate_funny_reply(user_text)
+    await msg.reply_text(funny)
 
-    if msg.reply_to_message and msg.reply_to_message.from_user.id == context.bot.id:
-        print("✅ It's a reply to the bot. Generating funny reply...")
-
-        user_text = msg.text
-        funny_response = await generate_funny_reply(user_text)
-        await msg.reply_text(funny_response)
-
-# ------------------- Start the Bot -------------------
+# ------------------- Run Bot -------------------
 async def main():
     load_usernames()
-    
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-    # Handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("ask", ask))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_users))
-    from telegram.ext import MessageFilter
-
-    class ReplyToBotFilter(MessageFilter):
-        def filter(self, message):
-            return (
-                message.reply_to_message is not None and
-                message.reply_to_message.from_user and
-                message.reply_to_message.from_user.is_bot
-            )
-
-    reply_to_bot_filter = ReplyToBotFilter()
     app.add_handler(MessageHandler(filters.TEXT & reply_to_bot_filter, handle_reply))
 
-# 🔄 Correct async scheduler for your ask_group()
     scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        ask_group,
-        trigger='cron',
-        hour='9,21',
-        minute=0,
-        args=[app]
-    )
+    scheduler.add_job(ask_group, trigger="cron", hour="9,21", minute=0, args=[app])
     scheduler.start()
 
     print("✅ Bot is running...")
     await app.run_polling()
+
+async def ask_group(app):
+    chat_id = -1003675950022
+    q = await generate_question()
+    usernames = list(active_usernames)
+    mentions = [f"@{u}" for u in random.sample(usernames, min(3, len(usernames)))]
+    await app.bot.send_message(chat_id=chat_id, text=f"{q}\n\n📣 {' '.join(mentions)}")
 
 if __name__ == "__main__":
     asyncio.run(main())

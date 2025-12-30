@@ -139,6 +139,18 @@ async def handle_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ------------------- Run Bot -------------------
 async def main():
     load_usernames()
+    async def debug_anything(update: Update, context: ContextTypes.DEFAULT_TYPE):
+        msg = update.message
+        if msg:
+            print("🔍 ANY message received")
+            if msg.reply_to_message:
+                print("↩️ Is a reply!")
+                print("👤 Replied to user ID:", msg.reply_to_message.from_user.id)
+                print("🤖 Bot ID:", context.bot.id)
+            else:
+                print("❌ Not a reply.")
+
+    app.add_handler(MessageHandler(filters.ALL, debug_anything))  # TEMPORARY DEBUG
     app = ApplicationBuilder().token(BOT_TOKEN).build()
 
     app.add_handler(CommandHandler("start", start))

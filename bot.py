@@ -59,6 +59,31 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("سلام! من ربات گروه مدیریت استرسم 😊")
 
 # ------------------- GPT Question Generator -------------------
+
+themes = [
+    "Ask a poetic and dreamy question about how emotions feel.",
+    "Ask a funny and light-hearted question related to everyday stress.",
+    "Ask a deep and reflective question about how someone handles anxiety.",
+    "Ask a metaphorical question that turns stress into a symbol or image.",
+    "Ask a journal-style question that helps people explore their thoughts.",
+    "Ask a question like a calm friend inviting someone to breathe and share.",
+    "Ask a creative question using colors or seasons to describe emotions.",
+    "Ask a question that encourages gratitude and noticing small joys.",
+    "Ask a question that compares stress to weather or natural forces.",
+    "Ask a question that helps someone reconnect with their inner peace.",
+    "Ask a playful ‘what if’ question that invites imagination and emotion.",
+    "Ask a nostalgic question about comforting memories during hard times.",
+    "Ask a gentle and warm question that could be part of a daily check-in.",
+    "Ask a surreal question, like something from a dream or fantasy.",
+    "Ask a short, thought-provoking quote-style question.",
+    "Ask a music-related question about songs that help during stress.",
+    "Ask a sensory question — taste, smell, sound — linked to feelings.",
+    "Ask a question about how someone would comfort a friend who's anxious.",
+    "Ask a storytelling-style question, like ‘Imagine you’re on a calm island…’",
+    "Ask a self-care question disguised as a game or playful challenge."
+]
+
+
 async def generate_question():
     try:
         response = client.chat.completions.create(
@@ -67,13 +92,10 @@ async def generate_question():
                 {
                     "role": "system",
                     "content":  (
-                    "You are a kind and supportive Telegram bot for teenagers and young adults. "
-                    "Each time, generate a different, unique, and natural-sounding question in Persian (Farsi) "
-                    "that helps users reflect, reduce stress, or talk about their emotions. "
-                    "Vary the tone and content: sometimes deep, sometimes light and fun, sometimes practical. "
-                    "Avoid repeating the same sentence structure. Use creativity, metaphors, and cultural variety. "
-                    "Keep each question short (1-2 lines) and emotionally safe for a friendly group chat."
-                    )
+            "You are a supportive Telegram bot for stress relief...\n"
+            + random.choice(themes) + "\n"
+            "Write the question in Persian (Farsi), casual and safe."
+            )
                 }
             ],
             temperature=0.8,

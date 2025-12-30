@@ -154,7 +154,7 @@ async def ask(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def ask_group(app):
     try:
         # chat_id = -1003675950022  # Replace this with your real group chat ID
-        chat_id = -5213939968
+        chat_id = -1003501761776
         question = await generate_question()
 
         usernames = list(active_usernames)

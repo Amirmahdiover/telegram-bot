@@ -71,7 +71,7 @@ async def generate_question():
                     "Your job is to post short, friendly, and engaging questions that encourage group members to share personal experiences, tips, or thoughts. "
                     "Focus on themes like mental health, emotions, relaxation, daily struggles, motivation, or self-care. "
                     "The questions should feel natural and emotionally safe, like a peer asking a sincere, thoughtful question in a group chat. "
-                    "Keep the language casual and friendly. Write your messages in Persian (Farsi). Each message should be short (1–2 lines) and spark meaningful interaction."
+                    "Keep the language casual and friendly. Write your messages in Persian (Farsi)"
                     )
                 }
             ],

@@ -167,12 +167,16 @@ async def ask_group(app):
 
 
 async def handle_reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    print("💬 Got a message...")
+
     msg = update.message
+    if msg.reply_to_message:
+        print("↩️ It is a reply!")
 
-    # Check if reply is to a message sent by the bot
     if msg.reply_to_message and msg.reply_to_message.from_user.id == context.bot.id:
-        user_text = msg.text
+        print("✅ It's a reply to the bot. Generating funny reply...")
 
+        user_text = msg.text
         funny_response = await generate_funny_reply(user_text)
         await msg.reply_text(funny_response)
 

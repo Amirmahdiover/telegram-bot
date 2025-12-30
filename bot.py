@@ -75,7 +75,7 @@ async def generate_question():
                     )
                 }
             ],
-            temperature=0.3,
+            temperature=0.8,
         )
         return response.choices[0].message.content.strip()
     except Exception as e:
